@@ -53,23 +53,34 @@ const login = async (body) => {
 	}
 };
 
-const getCoordenadas = (rutas) => {
+const options = {
+	provider: "google",
+	apiKey: "AIzaSyA1Vt6RwwSUWihq5ud_MX3EHQum7jvwTAQ", // for Mapquest, OpenCage, Google Premier
+	formatter: null, // 'gpx', 'string', ...
+};
+const getCoordenadas = async (rutas) => {
+	const rutasBien = rutas.filter(
+		(ruta) => ruta.latitud != 0 && ruta.longitud != 0 && ruta.longitud != null
+	);
+	const rutasMal = rutas.filter(
+		(ruta) => ruta.latitud == 0 || ruta.longitud == 0 || ruta.longitud == null
+	);
 	const geocoder = NodeGeocoder(options);
-	const nuevas = rutas.map(async (ruta, i) => {
+	const rutasCorregidas = rutasMal.map(async (ruta, i) => {
 		const res = await geocoder.geocode(
 			`${ruta.direccion} ${ruta.numvia} ${ruta.poblacion}`
 		);
 
 		return {
 			...ruta,
-			latitude: res.length > 0 ? res[0].latitude : 0,
-			longitude: res.length > 0 ? res[0].longitude : 0,
+			latitud: res.length > 0 ? res[0].latitude : 0,
+			longitud: res.length > 0 ? res[0].longitude : 0,
 			status: 0,
 		};
 	});
-	return Promise.all(nuevas)
-		.then((result) => result)
-		.catch((e) => e);
+	const promesaResuelta = await Promise.all(rutasCorregidas);
+
+	return [...promesaResuelta, ...rutasBien];
 };
 
 module.exports = {
